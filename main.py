@@ -9,7 +9,6 @@ from PIL import Image
 from transformers import BlipProcessor, BlipForConditionalGeneration, pipeline
 import uvicorn
 import torch
-import torchaudio
 import shutil
 import tempfile
 
@@ -59,11 +58,11 @@ async def send(text: str | None, image: UploadFile | None, aud: UploadFile | Non
         if text:
             context += f"Text:{text}"
         if aud is not None:
-            logging.warning("strated processing audio")
+            logging.warning("started processing audio")
             try:
                 audtext: str
                 audtext = audio.convert(aud.file)
-                context += f"Audio:{audtext}"
+                context += f" Audio:{audtext}"
                 if classifer:
                     try:
                         aud.file.seek(0)
@@ -86,13 +85,13 @@ async def send(text: str | None, image: UploadFile | None, aud: UploadFile | Non
             try:
                 imgtext: str
                 imgtext = pytesseract.image_to_string(Image.open(image.file))
-                context += f"Image:{imgtext}"
+                context += f" Image:{imgtext}"
                 if processor and model:
                     image = Image.open(image.file)
                     inputs = processor(image, return_tensors="pt").to(device)
                     out = model.generate(**inputs)
                     caption = processor.decode(out[0], skip_special_tokens=True)
-                    context += f"Image caption:{caption}"
+                    context += f" Image caption:{caption}"
             except Exception as e:
                 logging.warning(f"Error:{e}")
     except Exception as e:
