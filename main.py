@@ -73,7 +73,8 @@ async def send(text: str | None, image: UploadFile | None, aud: UploadFile | Non
                             shutil.copyfileobj(aud.file, tmp)
                             tmp_path = tmp.name
                         result = classifer(tmp_path)
-                        logging.warning(result)
+                        logging.warning(result[0]["label"])
+                        context += f" Background sound:{result[0]['label']}"
                     except Exception as e:
                         logging.warning(
                             f"Error is {e} while processing background noise"
