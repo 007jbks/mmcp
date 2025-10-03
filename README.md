@@ -4,7 +4,8 @@
 This is a prototype stage demonstration of a multimodal MCP server that currently has three modality inputs -
 1. Text
 2. Image
-3. Audio
+3. Audio  
+
 The first one is just simple but let's discuss the next two in detail:-
 
 
