@@ -18,8 +18,10 @@ model = None
 
 if torch.backends.mps.is_available():
     device = torch.device("mps")
+elif torch.cuda.is_available():
+    device = torch.device("cuda")
 else:
-    logging.warning("MPS is not available")
+    logging.warning("MPS and CUDA not available")
     device = torch.device("cpu")
 
 try:
