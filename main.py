@@ -11,7 +11,7 @@ import uvicorn
 import torch
 import shutil
 import tempfile
-
+from test import receiver
 
 processor = None
 model = None
@@ -26,6 +26,7 @@ else:
 
 try:
     processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
+
     model = BlipForConditionalGeneration.from_pretrained(
         "Salesforce/blip-image-captioning-base"
     )
@@ -55,6 +56,7 @@ app = FastAPI()
 @app.post("/send")
 async def send(text: str | None, image: UploadFile | None, aud: UploadFile | None):
     context = ""
+    receiver("")
     logging.warning("started")
     try:
         if text:
@@ -98,10 +100,11 @@ async def send(text: str | None, image: UploadFile | None, aud: UploadFile | Non
                 logging.warning(f"Error:{e}")
     except Exception as e:
         logging.warning(f"Error:{e}")
-    return {"Context": context}
+    response = receiver(context)
+    return {"AI response": response}
 
 
 if __name__ == "__main__":
-    config = uvicorn.Config("main:app", port=5000, log_level="info")
+    config = uvicorn.Config("main:app", port=5001, log_level="info")
     server = uvicorn.Server(config)
     server.run()
