@@ -6,7 +6,8 @@ This is a prototype stage demonstration of a multimodal MCP server that currentl
 2. Image
 3. Audio
 4. Video modality with audio support
-The first one is just simple but let's discuss the next two in detail:-
+
+#### The first one is just simple but let's discuss the next two in detail:-
 
 
 ## 1. Image Modality
