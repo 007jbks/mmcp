@@ -55,7 +55,6 @@ app = FastAPI()
 
 
 def process_audio_file(audio_path: str) -> str:
-    """Processes an audio file to extract text and classify background sound."""
     audio_context = ""
     if not audio_path or not os.path.exists(audio_path):
         return ""
