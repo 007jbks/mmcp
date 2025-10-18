@@ -14,6 +14,7 @@ from test import receiver
 from transformers import BlipForConditionalGeneration, BlipProcessor, pipeline
 from video import process_video
 
+# Configure logging to ensure all messages are displayed in the terminal
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
@@ -53,6 +54,23 @@ except Exception as e:
 app = FastAPI()
 
 
+def process_audio_file(audio_path: str) -> str:
+    """Processes an audio file to extract text and classify background sound."""
+    audio_context = ""
+    if not audio_path or not os.path.exists(audio_path):
+        return ""
+    try:
+        audtext = audio.convert(audio_path)
+        audio_context += f" Audio Transcript:{audtext}"
+        if classifier:
+            result = classifier(audio_path)
+            logging.info(f"Audio classification result: {result[0]['label']}")
+            audio_context += f" Background sound:{result[0]['label']}"
+    except Exception as e:
+        logging.error(f"Error processing audio file {audio_path}: {e}")
+    return audio_context
+
+
 @app.post("/send")
 async def send(
     text: Optional[str] = Form(None),
@@ -68,31 +86,23 @@ async def send(
             context += f"Text:{text}"
 
         if aud is not None:
-            logging.info("Started processing audio")
+            logging.info("Started processing direct audio upload")
             tmp_path = None
             try:
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
                     shutil.copyfileobj(aud.file, tmp)
                     tmp_path = tmp.name
-
-                audtext = audio.convert(tmp_path)
-                context += f" Audio:{audtext}"
-                if classifier:
-                    result = classifier(tmp_path)
-                    logging.info(f"Audio classification result: {result[0]['label']}")
-                    context += f" Background sound:{result[0]['label']}"
-            except Exception as e:
-                logging.error(f"Error processing audio: {e}")
+                context += process_audio_file(tmp_path)
             finally:
                 if tmp_path and os.path.exists(tmp_path):
-                    os.remove(tmp_path)  # Clean up the temp file
+                    os.remove(tmp_path)
 
         if image is not None:
             logging.info("Started processing image")
             try:
                 img = Image.open(image.file)
                 imgtext = pytesseract.image_to_string(img)
-                context += f" Image:{imgtext}"
+                context += f" Image Text:{imgtext}"
                 if processor and model:
                     inputs = processor(img, return_tensors="pt").to(device)
                     out = model.generate(**inputs)
@@ -101,13 +111,20 @@ async def send(
             except Exception as e:
                 logging.error(f"Error processing image: {e}")
 
-        if vid is not video:
+        if vid is not None:
             logging.info("Started processing video")
+            video_audio_path = None
             try:
-                video_captions = process_video(vid.file)
-                context += f" Video Content:{video_captions}"
+                video_captions, video_audio_path = process_video(vid.file)
+                context += f" Video Visual Content:{video_captions}"
+                if video_audio_path:
+                    logging.info("Processing audio extracted from video")
+                    context += "Video's audio :" + process_audio_file(video_audio_path)
             except Exception as e:
                 logging.error(f"Error processing video: {e}")
+            finally:
+                if video_audio_path and os.path.exists(video_audio_path):
+                    os.remove(video_audio_path)
 
     except Exception as e:
         logging.error(f"An unexpected error occurred: {e}")

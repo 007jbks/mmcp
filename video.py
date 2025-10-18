@@ -5,6 +5,7 @@ import os
 import tempfile
 import shutil
 from transformers import BlipProcessor, BlipForConditionalGeneration
+from moviepy import VideoFileClip
 
 device = "mps"
 try:
@@ -28,19 +29,29 @@ def caption(image):
 
 
 def process_video(video_file, output_dir="video/video0"):
-    temp_file_path = None
-    if hasattr(video_file, "read"):  # Check if it's a file-like object
+    temp_video_path = None
+    if hasattr(video_file, "read"):
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
             shutil.copyfileobj(video_file, tmp)
-            temp_file_path = tmp.name
-        video_path = temp_file_path
+            temp_video_path = tmp.name
+        video_path = temp_video_path
     else:
         video_path = video_file
 
     if not os.path.exists(video_path):
-        if temp_file_path:
-            os.remove(temp_file_path)
-        return f"Error: Video file not found at {video_path}"
+        if temp_video_path:
+            os.remove(temp_video_path)
+        return f"Error: Video file not found at {video_path}", None
+
+    extracted_audio_path = None
+    try:
+        video_clip = VideoFileClip(video_path)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_audio:
+            video_clip.audio.write_audiofile(tmp_audio.name, codec="pcm_s16le")
+            extracted_audio_path = tmp_audio.name
+        video_clip.close()
+    except Exception as e:
+        logging.error(f"Could not extract audio from video: {e}")
 
     vid = cv2.VideoCapture(video_path)
     fps = vid.get(cv2.CAP_PROP_FPS)
@@ -58,7 +69,7 @@ def process_video(video_file, output_dir="video/video0"):
             count += 1
         frame_count += 1
 
-    print(f"Number of frames extracted: {count}")
+    logging.info(f"Number of frames extracted: {count}")
     vid.release()
 
     temporal_info = ""
@@ -68,20 +79,7 @@ def process_video(video_file, output_dir="video/video0"):
         if img is not None:
             temporal_info += f"frame{i} : {caption(img)}\n"
 
-    if temp_file_path:
-        os.remove(temp_file_path)  # Clean up the temporary file
+    if temp_video_path:
+        os.remove(temp_video_path)
 
-    return temporal_info
-
-
-if __name__ == "__main__":
-    video_file = "path for mock"
-    all_captions = process_video(video_file)
-
-    if "Error" not in all_captions:
-        print("\n--- Generated Captions ---")
-        print(all_captions)
-
-        with open("record.txt", "w+") as f:
-            f.write(all_captions)
-        print("\nCaptions saved to record.txt")
+    return temporal_info, extracted_audio_path
