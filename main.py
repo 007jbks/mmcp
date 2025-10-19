@@ -14,7 +14,6 @@ from test import receiver
 from transformers import BlipForConditionalGeneration, BlipProcessor, pipeline
 from video import process_video
 
-# Configure logging to ensure all messages are displayed in the terminal
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )

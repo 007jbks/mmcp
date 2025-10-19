@@ -21,7 +21,6 @@ except Exception as e:
 
 
 def caption(image):
-    """Generates a caption for a given image."""
     inputs = processor(image, return_tensors="pt").to(device)
     out = model.generate(**inputs)
     caption_text = processor.decode(out[0], skip_special_tokens=True)
